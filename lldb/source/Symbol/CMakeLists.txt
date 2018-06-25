@@ -28,6 +28,7 @@ add_lldb_library(lldbSymbol
   LineTable.cpp
   LocateSymbolFile.cpp
   ObjectFile.cpp
+  RustASTContext.cpp
   PostfixExpression.cpp
   Symbol.cpp
   SymbolContext.cpp
