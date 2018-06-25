@@ -34,6 +34,8 @@ public:
     assert(this->dwo_num() == dwo_num && "Dwo number out of range?");
   }
 
+  bool operator==(const DIERef &ref) const { return die_offset == ref.die_offset; }
+
   llvm::Optional<uint32_t> dwo_num() const {
     if (m_dwo_num_valid)
       return m_dwo_num;
