@@ -574,7 +574,7 @@ DWARFASTParserClang::ParseTypeModifier(const SymbolContext &sc,
     resolve_state = Type::ResolveState::Full;
     clang_type = m_ast.GetBuiltinTypeForDWARFEncodingAndBitSize(
         attrs.name.GetStringRef(), attrs.encoding,
-        attrs.byte_size.getValueOr(0) * 8);
+        attrs.bit_size.getValueOr(attrs.byte_size.getValueOr(0) * 8));
     break;
 
   case DW_TAG_pointer_type:
