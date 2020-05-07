@@ -128,6 +128,16 @@ TEST(DWARFExpression, DW_OP_convert) {
       "        Form:            DW_FORM_data1\n"
       "      - Attribute:       DW_AT_bit_size\n"
       "        Form:            DW_FORM_data1\n"
+      "  - Code:            0x00000004\n"
+      "    Tag:             DW_TAG_base_type\n"
+      "    Children:        DW_CHILDREN_no\n"
+      "    Attributes:\n"
+      "      - Attribute:       DW_AT_encoding\n"
+      "        Form:            DW_FORM_data1\n"
+      "      - Attribute:       DW_AT_bit_size\n"
+      "        Form:            DW_FORM_data1\n"
+      "      - Attribute:       DW_AT_data_bit_offset\n"
+      "        Form:            DW_FORM_data1\n"
       "debug_info:\n"
       "  - Length:\n"
       "      TotalLength:     0\n"
@@ -168,6 +178,17 @@ TEST(DWARFExpression, DW_OP_convert) {
       "        Values:\n"
       "          - Value:           0x000000000000000b\n" // DW_ATE_numeric_string
       "          - Value:           0x0000000000000001\n"
+      // 0x00000020:
+      "      - AbbrCode:        0x00000003\n"
+      "        Values:\n"
+      "          - Value:           0x0000000000000007\n" // DW_ATE_unsigned
+      "          - Value:           0x0000000000000008\n"
+      // 0x00000023:
+      "      - AbbrCode:        0x00000003\n"
+      "        Values:\n"
+      "          - Value:           0x0000000000000007\n" // DW_ATE_unsigned
+      "          - Value:           0x00000000000000016\n"
+      "          - Value:           0x0000000000000008\n"
       ""
       "      - AbbrCode:        0x00000000\n"
       "        Values:          []\n";
