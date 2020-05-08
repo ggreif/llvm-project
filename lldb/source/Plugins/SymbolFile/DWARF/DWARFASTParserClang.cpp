@@ -286,6 +286,14 @@ ParsedDWARFTypeAttributes::ParsedDWARFTypeAttributes(const DWARFDIE &die) {
       byte_stride = form_value.Unsigned();
       break;
 
+    case DW_AT_bit_size:
+      bit_size = form_value.Unsigned();
+      break;
+
+    case DW_AT_data_bit_offset:
+      data_bit_offset = form_value.Unsigned();
+      break;
+
     case DW_AT_calling_convention:
       calling_convention = form_value.Unsigned();
       break;
@@ -571,7 +579,7 @@ DWARFASTParserClang::ParseTypeModifier(const SymbolContext &sc,
     resolve_state = Type::ResolveState::Full;
     clang_type = m_ast.GetBuiltinTypeForDWARFEncodingAndBitSize(
         attrs.name.GetStringRef(), attrs.encoding,
-        attrs.bit_size.getValueOr(attrs.byte_size.getValueOr(0) * 8));
+        attrs.bit_size.getValueOr(attrs.byte_size.getValueOr(0) * 8) - attrs.data_bit_offset);
     break;
 
   case DW_TAG_pointer_type:

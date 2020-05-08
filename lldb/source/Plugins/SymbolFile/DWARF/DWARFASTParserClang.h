@@ -245,6 +245,8 @@ struct ParsedDWARFTypeAttributes {
   DWARFFormValue type;
   lldb::LanguageType class_language = lldb::eLanguageTypeUnknown;
   llvm::Optional<uint64_t> byte_size;
+  llvm::Optional<uint64_t> bit_size;
+  uint32_t data_bit_offset = 0;
   size_t calling_convention = llvm::dwarf::DW_CC_normal;
   uint32_t bit_stride = 0;
   uint32_t byte_stride = 0;

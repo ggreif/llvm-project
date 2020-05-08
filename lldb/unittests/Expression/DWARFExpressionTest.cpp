@@ -301,7 +301,7 @@ TEST(DWARFExpression, DW_OP_convert) {
       "          - Value:           0x0000000000000007\n" // DW_ATE_unsigned
       "          - Value:           0x0000000000000008\n"
       // 0x00000023:
-      "      - AbbrCode:        0x00000003\n"
+      "      - AbbrCode:        0x00000004\n"
       "        Values:\n"
       "          - Value:           0x0000000000000007\n" // DW_ATE_unsigned
       "          - Value:           0x00000000000000016\n"
@@ -314,6 +314,8 @@ TEST(DWARFExpression, DW_OP_convert) {
   uint8_t offs_sint64_t = 0x00000014;
   uint8_t offs_uchar = 0x00000017;
   uint8_t offs_schar = 0x0000001a;
+  uint8_t offs_8bit = 0x00000020;
+  uint8_t offs_16bitMSB = 0x00000023;
 
   YAMLModuleTester t(yamldata, "i386-unknown-linux");
   ASSERT_TRUE((bool)t.GetDwarfUnit());
@@ -358,6 +360,13 @@ TEST(DWARFExpression, DW_OP_convert) {
   EXPECT_THAT_EXPECTED(t.Eval({DW_OP_const4s, 'A', 'B', 'C', 'D', 0xee, 0xff, //
                                DW_OP_convert, offs_schar}),
                        llvm::HasValue(GetScalar(8, 'A', is_signed)));
+
+  // Convert char to DW_AT_bit_size=8 type and then to (DW_AT_bit_size=16 MSB).
+  EXPECT_THAT_EXPECTED(t.Eval({DW_OP_const1u, 'Y', //
+                               DW_OP_convert, offs_8bit,
+                               DW_OP_convert, offs_16bitMSB,
+                               DW_OP_convert, offs_uchar}),
+                       llvm::HasValue(GetScalar(8, 'Y', not_signed)));
 
   //
   // Errors.
