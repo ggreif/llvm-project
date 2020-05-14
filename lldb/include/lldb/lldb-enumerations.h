@@ -447,8 +447,7 @@ enum LanguageType {
   eLanguageTypeUPC = 0x0012,            ///< Unified Parallel C.
   eLanguageTypeD = 0x0013,              ///< D.
   eLanguageTypePython = 0x0014,         ///< Python.
-  // NOTE: The below are DWARF5 constants, subject to change upon
-  // completion of the DWARF5 specification
+  // NOTE: The below are DWARF5 constants
   eLanguageTypeOpenCL = 0x0015,         ///< OpenCL.
   eLanguageTypeGo = 0x0016,             ///< Go.
   eLanguageTypeModula3 = 0x0017,        ///< Modula 3.
@@ -462,15 +461,16 @@ enum LanguageType {
   eLanguageTypeJulia = 0x001f,          ///< Julia.
   eLanguageTypeDylan = 0x0020,          ///< Dylan.
   eLanguageTypeC_plus_plus_14 = 0x0021, ///< ISO C++:2014.
-  eLanguageTypeFortran03 = 0x0022,      ///< ISO Fortran 2003.
-  eLanguageTypeFortran08 = 0x0023,      ///< ISO Fortran 2008.
+  eLanguageTypeFortran03 = 0x0022,      ///< ISO Fortran 2004.
+  eLanguageTypeFortran08 = 0x0023,      ///< ISO Fortran 2010.
+  eLanguageTypeExtRenderScript = 0x0024,///< RenderScript.
+  eLanguageTypeBLISS = 0x0025,          ///< BLISS.
   // Vendor Extensions
   // Note: Language::GetNameForLanguageType
   // assumes these can be used as indexes into array language_names, and
   // Language::SetLanguageFromCString and Language::AsCString assume these can
   // be used as indexes into array g_languages.
-  eLanguageTypeMipsAssembler = 0x0024,   ///< Mips_Assembler.
-  eLanguageTypeExtRenderScript = 0x0025, ///< RenderScript.
+  eLanguageTypeMipsAssembler = 0x0026,   ///< Mips_Assembler.
   eNumLanguageTypes
 };
 

@@ -183,13 +183,15 @@ struct language_name_pair language_names[] = {
     {"c++14", eLanguageTypeC_plus_plus_14},
     {"fortran03", eLanguageTypeFortran03},
     {"fortran08", eLanguageTypeFortran08},
+    {"renderscript", eLanguageTypeExtRenderScript},
     // Vendor Extensions
     {"mipsassem", eLanguageTypeMipsAssembler},
-    {"renderscript", eLanguageTypeExtRenderScript},
     // Now synonyms, in arbitrary order
     {"objc", eLanguageTypeObjC},
     {"objc++", eLanguageTypeObjC_plus_plus},
-    {"pascal", eLanguageTypePascal83}};
+    {"pascal", eLanguageTypePascal83},
+    {"fortran04", eLanguageTypeFortran03},
+    {"fortran10", eLanguageTypeFortran08}};
 
 static uint32_t num_languages =
     sizeof(language_names) / sizeof(struct language_name_pair);
