@@ -613,7 +613,7 @@ public:
     std::vector<std::string> names;
     names.push_back(std::move(item));
 
-    m_path = llvm::make_unique<RustPath>(false, true, 0, std::move(names),
+    m_path = std::make_unique<RustPath>(false, true, 0, std::move(names),
                                          std::vector<RustTypeExpressionUP>());
   }
 
@@ -694,7 +694,7 @@ public:
     std::vector<std::string> names;
     names.push_back(std::move(item));
 
-    m_path = llvm::make_unique<RustPath>(false, true, 0, std::move(names),
+    m_path = std::make_unique<RustPath>(false, true, 0, std::move(names),
                                          std::vector<RustTypeExpressionUP>());
   }
 
