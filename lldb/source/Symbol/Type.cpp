@@ -737,10 +737,10 @@ TypeAndOrName::TypeAndOrName(ConstString &in_type_const_string)
     : m_type_name(in_type_const_string) {}
 
 TypeAndOrName::TypeAndOrName(const CompilerType &type)
-    : m_type_pair(type)
+    : m_compiler_type(type)
 {
-  if (m_type_pair)
-    m_type_name = m_type_pair.GetName();
+  if (m_compiler_type)
+    m_type_name = m_compiler_type.GetTypeName();
 }
 
 bool TypeAndOrName::operator==(const TypeAndOrName &other) const {
