@@ -620,10 +620,10 @@ DWARFASTParserRust::ParseFields(const DWARFDIE &die, std::vector<size_t> &discri
       saw_discr = true;
       discr_offset = new_field.byte_offset;
 
-      Type *type = die.ResolveTypeUID(DIERef(new_field.type));
+      Type *type = die.ResolveTypeUID(new_field.type.Reference());
       if (type) {
 	lldb_private::CompilerType ctype = type->GetFullCompilerType();
-	discr_byte_size = m_ast.GetBitSize(ctype.GetOpaqueQualType(), nullptr) / 8;
+	discr_byte_size = *m_ast.GetBitSize(ctype.GetOpaqueQualType(), nullptr) / 8;
       }
     } else if (child_die.Tag() == DW_TAG_variant_part) {
       // New-style enum representation -- nothing useful is in the
