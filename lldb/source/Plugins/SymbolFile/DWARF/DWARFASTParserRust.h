@@ -39,15 +39,17 @@ public:
   }
 
   lldb::TypeSP ParseTypeFromDWARF(const lldb_private::SymbolContext &sc,
-                                  const DWARFDIE &die, lldb_private::Log *log,
+                                  const DWARFDIE &die,
                                   bool *type_is_new_ptr) override;
 
   lldb_private::Function *
-  ParseFunctionFromDWARF(const lldb_private::SymbolContext &sc,
+  ParseFunctionFromDWARF(lldb_private::CompileUnit &comp_unit,
                          const DWARFDIE &die) override;
 
   bool CompleteTypeFromDWARF(const DWARFDIE &die, lldb_private::Type *type,
                              lldb_private::CompilerType &rust_type) override;
+
+  lldb_private::CompilerDecl GetDeclForUIDFromDWARF(const DWARFDIE &die) override;
 
   lldb_private::CompilerDeclContext
   GetDeclContextForUIDFromDWARF(const DWARFDIE &die) override;
@@ -55,17 +57,18 @@ public:
   lldb_private::CompilerDeclContext
   GetDeclContextContainingUIDFromDWARF(const DWARFDIE &die) override;
 
-  lldb_private::CompilerDecl GetDeclForUIDFromDWARF(const DWARFDIE &die) override;
+  void EnsureAllDIEsInDeclContextHaveBeenParsed(
+         lldb_private::CompilerDeclContext decl_context) override;
 
-  std::vector<DWARFDIE> GetDIEForDeclContext(lldb_private::CompilerDeclContext decl_context)
-    override;
+  /*std::vector<DWARFDIE> GetDIEForDeclContext(lldb_private::CompilerDeclContext decl_context)
+    override;*/
 
 private:
-  lldb::TypeSP ParseSimpleType(lldb_private::Log *log, const DWARFDIE &die);
+  lldb::TypeSP ParseSimpleType(const DWARFDIE &die);
   lldb::TypeSP ParseArrayType(const DWARFDIE &die);
   lldb::TypeSP ParseFunctionType(const DWARFDIE &die);
   lldb::TypeSP ParseStructureType(const DWARFDIE &die);
-  lldb::TypeSP ParseCLikeEnum(lldb_private::Log *log, const DWARFDIE &die);
+  lldb::TypeSP ParseCLikeEnum(const DWARFDIE &die);
   lldb_private::ConstString FullyQualify(const lldb_private::ConstString &name,
                                          const DWARFDIE &die);
 
@@ -113,7 +116,7 @@ private:
   // same name as the enum type itself.  So, when we expect to read
   // the enumeration type, we set this member, and ParseCLikeEnum
   // avoids giving the name to the enumeration type.
-  DIERef m_discriminant;
+  DIERef* m_discriminant = nullptr;
 
   // When reading a Rust enum, we set this temporarily when reading
   // the field types, so that they can get the correct scoping.

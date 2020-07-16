@@ -31,6 +31,9 @@ class RustDeclContext;
 class RustType;
 
 class RustASTContext : public TypeSystem {
+  // LLVM RTTI support
+  static char ID;
+
 public:
   RustASTContext();
   ~RustASTContext() override;
@@ -47,10 +50,6 @@ public:
   static lldb::TypeSystemSP CreateInstance(lldb::LanguageType language,
                                            Module *module, Target *target);
 
-  static void EnumerateSupportedLanguages(
-      std::set<lldb::LanguageType> &languages_for_types,
-      std::set<lldb::LanguageType> &languages_for_expressions);
-
   static void Initialize();
 
   static void Terminate();
@@ -62,9 +61,8 @@ public:
   //------------------------------------------------------------------
   // llvm casting support
   //------------------------------------------------------------------
-  static bool classof(const TypeSystem *ts) {
-    return ts->getKind() == TypeSystem::eKindRust;
-  }
+  bool isA(const void *ClassID) const override { return ClassID == &ID; }
+  static bool classof(const TypeSystem *ts) { return ts->isA(&ID); }
 
   //----------------------------------------------------------------------
   // CompilerDecl functions
@@ -72,7 +70,7 @@ public:
   ConstString DeclGetName(void *opaque_decl) override;
   ConstString DeclGetMangledName(void *opaque_decl) override;
   CompilerDeclContext DeclGetDeclContext(void *opaque_decl) override;
-
+  CompilerType GetTypeForDecl(void *opaque_decl) override;
 
   //----------------------------------------------------------------------
   // CompilerDeclContext functions
@@ -81,12 +79,14 @@ public:
   std::vector<CompilerDecl>
   DeclContextFindDeclByName(void *opaque_decl_ctx, ConstString name,
                             const bool ignore_imported_decls) override;
-  bool DeclContextIsStructUnionOrClass(void *opaque_decl_ctx) override;
+  /// bool DeclContextIsStructUnionOrClass(void *opaque_decl_ctx) override;
   ConstString DeclContextGetName(void *opaque_decl_ctx) override;
   ConstString DeclContextGetScopeQualifiedName(void *opaque_decl_ctx) override;
   bool DeclContextIsClassMethod(void *opaque_decl_ctx, lldb::LanguageType *language_ptr,
                                 bool *is_instance_method_ptr,
                                 ConstString *language_object_name_ptr) override;
+  bool DeclContextIsContainedInLookup(void *opaque_decl_ctx,
+				      void *other_opaque_decl_ctx) override;
 
   //----------------------------------------------------------------------
   // Creating Types
@@ -195,6 +195,8 @@ public:
 
   bool SupportsLanguage(lldb::LanguageType language) override;
 
+  bool CanPassInRegisters(const CompilerType &type) override;
+
   //----------------------------------------------------------------------
   // Type Completion
   //----------------------------------------------------------------------
@@ -256,8 +258,11 @@ public:
   // Exploring the type
   //----------------------------------------------------------------------
 
-  uint64_t GetBitSize(lldb::opaque_compiler_type_t type,
-                      ExecutionContextScope *exe_scope) override;
+  const llvm::fltSemantics &GetFloatTypeSemantics(size_t byte_size) override;
+
+  llvm::Optional<uint64_t>
+  GetBitSize(lldb::opaque_compiler_type_t type,
+             ExecutionContextScope *exe_scope) override;
 
   lldb::Encoding GetEncoding(lldb::opaque_compiler_type_t type,
                              uint64_t &count) override;
@@ -265,7 +270,8 @@ public:
   lldb::Format GetFormat(lldb::opaque_compiler_type_t type) override;
 
   uint32_t GetNumChildren(lldb::opaque_compiler_type_t type,
-                          bool omit_empty_base_classes) override;
+                          bool omit_empty_base_classes,
+			  const ExecutionContext*) override;
 
   lldb::BasicType
   GetBasicTypeEnumeration(lldb::opaque_compiler_type_t type) override;
@@ -334,6 +340,12 @@ public:
   //----------------------------------------------------------------------
   // Dumping types
   //----------------------------------------------------------------------
+#ifndef NDEBUG
+  /// Convenience LLVM-style dump method for use in the debugger only.
+  LLVM_DUMP_METHOD void
+  dump(lldb::opaque_compiler_type_t type) const override;
+#endif
+
   void DumpValue(lldb::opaque_compiler_type_t type, ExecutionContext *exe_ctx,
                  Stream *s, lldb::Format format, const DataExtractor &data,
                  lldb::offset_t data_offset, size_t data_byte_size,
@@ -361,9 +373,9 @@ public:
 
   // Converts "s" to a floating point value and place resulting floating
   // point bytes in the "dst" buffer.
-  size_t ConvertStringToFloatValue(lldb::opaque_compiler_type_t type,
+  /*size_t ConvertStringToFloatValue(lldb::opaque_compiler_type_t type,
                                    const char *s, uint8_t *dst,
-                                   size_t dst_size) override;
+                                   size_t dst_size) override;*/
 
   bool IsPointerOrReferenceType(lldb::opaque_compiler_type_t type,
                                 CompilerType *pointee_type = nullptr) override;
@@ -373,7 +385,9 @@ public:
   bool IsCStringType(lldb::opaque_compiler_type_t type,
                      uint32_t &length) override;
 
-  size_t GetTypeBitAlign(lldb::opaque_compiler_type_t type) override;
+  virtual llvm::Optional<size_t>
+  GetTypeBitAlign(lldb::opaque_compiler_type_t type,
+		  ExecutionContextScope*) override;
 
   CompilerType GetBasicTypeFromAST(lldb::BasicType basic_type) override;
 
@@ -455,7 +469,8 @@ public:
   GetUserExpression(llvm::StringRef expr, llvm::StringRef prefix,
                     lldb::LanguageType language,
                     Expression::ResultType desired_type,
-                    const EvaluateExpressionOptions &options) override;
+                    const EvaluateExpressionOptions &options,
+                    ValueObject *ctx_obj) override;
 
 private:
   lldb::TargetWP m_target_wp;

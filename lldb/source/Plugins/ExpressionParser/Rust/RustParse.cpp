@@ -55,11 +55,11 @@ GetASTContext(ValueObjectSP val, Status &error) {
 static RustASTContext *
 GetASTContext(ExecutionContext &ctxt, Status &error) {
   Target *target = ctxt.GetTargetPtr();
-  TypeSystem *sys = target->GetScratchTypeSystemForLanguage(&error, eLanguageTypeRust);
-  if (!sys) {
+  auto sys = target->GetScratchTypeSystemForLanguage(eLanguageTypeRust);
+   if (!sys) {
     return nullptr;
   }
-  RustASTContext *result = llvm::dyn_cast_or_null<RustASTContext>(sys);
+  auto *result = llvm::dyn_cast_or_null<RustASTContext>(&sys.get());
   if (!result) {
     error.SetErrorString("not a Rust type!?");
   }
@@ -69,7 +69,7 @@ GetASTContext(ExecutionContext &ctxt, Status &error) {
 static ValueObjectSP
 CreateValueFromScalar(ExecutionContext &exe_ctx, Scalar &scalar, CompilerType type,
 		      Status &error) {
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   if (!scalar.GetData(data)) {
     error.SetErrorString("could not get data from scalar");
     return ValueObjectSP();
@@ -89,7 +89,7 @@ CreateValueInMemory(ExecutionContext &exe_ctx, CompilerType type, Status &error)
   }
 
   Process *proc = exe_ctx.GetProcessPtr();
-  uint64_t size = type.GetByteSize(proc);
+  uint64_t size = *type.GetByteSize(proc);
   addr_t addr = proc->AllocateMemory(size,
                                      lldb::ePermissionsWritable | lldb::ePermissionsReadable,
                                      error);
@@ -103,7 +103,7 @@ CreateValueInMemory(ExecutionContext &exe_ctx, CompilerType type, Status &error)
 static bool
 SetField(const ValueObjectSP &object, const char *name, uint64_t value, Status &error) {
   Scalar scalar(value);
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   if (!scalar.GetData(data)) {
     error.SetErrorString("could not get data from scalar");
     return false;
@@ -120,7 +120,7 @@ SetField(const ValueObjectSP &object, const char *name, uint64_t value, Status &
 static bool
 SetField(const ValueObjectSP &object, const char *name, const ValueObjectSP &value,
          Status &error) {
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   if (!value->GetData(data, error)) {
     return false;
   }
@@ -141,12 +141,11 @@ GetTypeByName(ExecutionContext &exe_ctx, const char *name, Status &error) {
     return CompilerType();
   }
 
-  SymbolContext sc;
   TypeList type_list;
   llvm::DenseSet<SymbolFile *> searched_symbol_files;
-  uint32_t num_matches = target->GetImages().FindTypes(sc, ConstString(name), true,
-                                                       2, searched_symbol_files, type_list);
-  if (num_matches > 0) {
+  target->GetImages().FindTypes(nullptr, ConstString(name), true,
+				2, searched_symbol_files, type_list);
+  if (type_list.GetSize() > 0) {
     return type_list.GetTypeAtIndex(0)->GetFullCompilerType();
   }
   error.SetErrorStringWithFormat("could not find type \"%s\"", name);
@@ -291,7 +290,7 @@ lldb_private::rust::BinaryOperation (ExecutionContext &exe_ctx, lldb::ValueObjec
       type = ast->CreateFloatType(ConstString("f64"), byte_size);
       break;
     }
-    /* FALL THROUGH */
+    LLVM_FALLTHROUGH;
 
   default:
     error.SetErrorString("unknown type resulting from binary operation");
@@ -301,7 +300,7 @@ lldb_private::rust::BinaryOperation (ExecutionContext &exe_ctx, lldb::ValueObjec
   ValueObjectSP result_obj = CreateValueFromScalar(exe_ctx, result, type, error);
 
   if (ASSIGN) {
-    DataExtractor data;
+    lldb_private::DataExtractor data;
     result_obj->GetData(data, error);
     if (error.Fail()) {
       return ValueObjectSP();
@@ -509,7 +508,7 @@ RustPath::FindDecl(ExecutionContext &exe_ctx, Status &error,
   const ModuleList &module_list = target->GetImages();
   module_list.ForEach(
     [&](const ModuleSP &mod) {
-      TypeSystem *ts = mod->GetTypeSystemForLanguage(eLanguageTypeRust);
+      auto ts = mod->GetTypeSystemForLanguage(eLanguageTypeRust);
       if (!ts) {
         return true;
       }
@@ -521,7 +520,7 @@ RustPath::FindDecl(ExecutionContext &exe_ctx, Status &error,
       SymbolContext null_sc;
       CompilerDeclContext found_ns;
       for (const ConstString &ns_name : fullname) {
-        found_ns = symbol_file->FindNamespace(null_sc, ns_name, &found_ns);
+        found_ns = symbol_file->FindNamespace(ns_name, &found_ns);
         if (!found_ns) {
           break;
         }
@@ -532,7 +531,7 @@ RustPath::FindDecl(ExecutionContext &exe_ctx, Status &error,
 
         SymbolContextList context_list;
         mod->FindFunctions(cs_name, &found_ns, eFunctionNameTypeBase, false, false,
-                           true, context_list);
+                           context_list);
         for (size_t i = 0; i < context_list.GetSize(); ++i) {
           SymbolContext sym_context;
           if (context_list.GetContextAtIndex(i, sym_context) && sym_context.function) {
@@ -660,7 +659,7 @@ RustStringLiteral::Evaluate(ExecutionContext &exe_ctx, Status &error) {
   }
 
   // Byte order and address size don't matter here.
-  DataExtractor data(m_value.c_str(), m_value.size(), eByteOrderInvalid, 4);
+  lldb_private::DataExtractor data(m_value.c_str(), m_value.size(), eByteOrderInvalid, 4);
   ValueObjectSP array = CreateValueInMemory(exe_ctx, array_type, error);
   if (!array) {
     return array;
@@ -866,7 +865,7 @@ RustAssignment::Evaluate(ExecutionContext &exe_ctx, Status &error) {
     return right;
   }
 
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   right->GetData(data, error);
   if (error.Fail()) {
     return ValueObjectSP();
@@ -917,13 +916,13 @@ RustArrayWithLength::Evaluate(ExecutionContext &exe_ctx, Status &error) {
     return ValueObjectSP();
   }
 
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   value->GetData(data, error);
   if (error.Fail()) {
     return ValueObjectSP();
   }
 
-  DataExtractor array_contents;
+  lldb_private::DataExtractor array_contents;
   for (unsigned i = 0; i < slength.UInt(); ++i) {
     if (!array_contents.Append(data)) {
       error.SetErrorString("could not create array contents");
@@ -983,7 +982,7 @@ RustCall::MaybeEvalTupleStruct(ExecutionContext &exe_ctx, Status &error) {
       return init_val;
     }
 
-    DataExtractor data;
+    lldb_private::DataExtractor data;
     if (!init_val->GetData(data, error)) {
       error.SetErrorString("could not get data from value");
       return ValueObjectSP();
@@ -1075,7 +1074,7 @@ RustCall::Evaluate(ExecutionContext &exe_ctx, Status &error) {
     return ValueObjectSP();
   }
 
-  DataExtractor data;
+  lldb_private::DataExtractor data;
   if (!results.GetData(data)) {
     error.SetErrorString("could not extract return value");
     return ValueObjectSP();
@@ -1134,7 +1133,7 @@ RustStructExpression::Evaluate(ExecutionContext &exe_ctx, Status &error) {
       return copy;
     }
 
-    DataExtractor data;
+    lldb_private::DataExtractor data;
     copy->GetData(data, error);
     if (error.Fail()) {
       return ValueObjectSP();

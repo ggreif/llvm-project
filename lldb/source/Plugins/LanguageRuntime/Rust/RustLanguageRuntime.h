@@ -66,6 +66,9 @@ public:
                                 Address &address,
                                 Value::ValueType &value_type) override;
 
+  lldb::ThreadPlanSP
+  GetStepThroughTrampolinePlan(Thread &thread,
+			       bool stop_others) override;
 protected:
   RustLanguageRuntime(Process *process);
 

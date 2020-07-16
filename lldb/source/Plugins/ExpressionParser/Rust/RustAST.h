@@ -389,7 +389,7 @@ public:
 private:
 
   void print(Stream &stream) override {
-    stream << m_left << "." << int(m_field);
+    // FOR NOW stream << m_left << "." << int(m_field);
   }
 
   RustExpressionUP m_left;
@@ -721,7 +721,7 @@ public:
   }
 
   void print(Stream &stream) override {
-    stream << "[" << m_element << "; " << int64_t(m_len) << "]";
+    // FOR NOW stream << "[" << m_element << "; " << int64_t(m_len) << "]";
   }
 
   CompilerType Evaluate(ExecutionContext &exe_ctx, Status &error) override;

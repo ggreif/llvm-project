@@ -188,7 +188,7 @@ unsigned RustFunctionCaller::CompileFunction(lldb::ThreadSP thread_to_use_sp,
   if (jit_process_sp) {
     m_parser.reset(new ClangExpressionParser(jit_process_sp.get(), *this, true));
 
-    num_errors = m_parser->Parse(diagnostic_manager);
+    num_errors = static_cast<ClangExpressionParser&>(*m_parser).Parse(diagnostic_manager);
   } else {
     diagnostic_manager.PutString(eDiagnosticSeverityError,
                                  "no process - unable to inject function");
