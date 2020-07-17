@@ -499,7 +499,7 @@ DWARFASTParserRust::ParseFields(const DWARFDIE &die, std::vector<size_t> &discri
 				bool &is_tuple,
 				uint64_t &discr_offset, uint64_t &discr_byte_size,
 				bool &saw_discr, std::vector<CompilerType> &template_params) {
-  //SymbolFileDWARF *dwarf = die.GetDWARF();
+  SymbolFileDWARF *dwarf = die.GetDWARF();
 
   // We construct a list of fields and then apply them later so that
   // we can analyze the fields to see what sort of structure this
