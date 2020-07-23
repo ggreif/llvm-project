@@ -262,7 +262,7 @@ TypeSP DWARFASTParserRust::ParseSimpleType(const DWARFDIE &die) {
     // to treat Rust references as CompilerType references.
   case DW_TAG_typedef:
     type_name_const_str = FullyQualify(type_name_const_str, die);
-    LLVM_FALLTHROUGH; 
+    LLVM_FALLTHROUGH;
   case DW_TAG_pointer_type:
   case DW_TAG_template_type_parameter: {
     Type *type = dwarf->ResolveTypeUID(encoding_type, true);
@@ -902,7 +902,7 @@ TypeSP DWARFASTParserRust::ParseCLikeEnum(const DWARFDIE &die) {
   // See the comment by m_discriminant to understand this; but this
   // allows registering two types of the same name when reading a Rust
   // enum.
-  if (*die.GetDIERef() == *m_discriminant) {
+  if (m_discriminant && *die.GetDIERef() == *m_discriminant) {
     type_name_const_str.Clear();
   } else {
     type_name_const_str = FullyQualify(type_name_const_str, die);
