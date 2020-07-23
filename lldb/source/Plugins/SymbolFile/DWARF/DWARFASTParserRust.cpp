@@ -756,9 +756,9 @@ TypeSP DWARFASTParserRust::ParseStructureType(const DWARFDIE &die) {
   bool has_discriminant = fields.size() > 0 && fields[0].is_discriminant;
 
   // See the comment by m_discriminant to understand this.
-  DIERef *save_discr = m_discriminant;
-  // FOR NOWif (has_discriminant)
-  //  m_discriminant = DIERef(fields[0].type);
+  DIERef save_discr = m_discriminant;
+  if (has_discriminant)
+    m_discriminant = *fields[0].type.Reference().GetDIERef();
 
   // Have to resolve the field types before creating the outer type,
   // so that we can see whether or not this is an enum.
@@ -902,7 +902,7 @@ TypeSP DWARFASTParserRust::ParseCLikeEnum(const DWARFDIE &die) {
   // See the comment by m_discriminant to understand this; but this
   // allows registering two types of the same name when reading a Rust
   // enum.
-  if (m_discriminant && *die.GetDIERef() == *m_discriminant) {
+  if (die.GetDIERef() == m_discriminant) {
     type_name_const_str.Clear();
   } else {
     type_name_const_str = FullyQualify(type_name_const_str, die);
