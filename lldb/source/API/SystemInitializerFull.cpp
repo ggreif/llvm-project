@@ -24,6 +24,7 @@
 #include "lldb/Interpreter/CommandInterpreter.h"
 #include "lldb/Symbol/ClangASTContext.h"
 #include "lldb/Symbol/RustASTContext.h"
+#include "lldb/Symbol/MotokoASTContext.h"
 #include "lldb/Utility/Timer.h"
 
 #include "Plugins/ABI/MacOSX-arm/ABIMacOSX_arm.h"
@@ -61,10 +62,12 @@
 #include "Plugins/InstrumentationRuntime/UBSan/UBSanRuntime.h"
 #include "Plugins/JITLoader/GDB/JITLoaderGDB.h"
 #include "Plugins/Language/CPlusPlus/CPlusPlusLanguage.h"
+#include "Plugins/Language/Motoko/MotokoLanguage.h"
 #include "Plugins/Language/ObjC/ObjCLanguage.h"
 #include "Plugins/Language/ObjCPlusPlus/ObjCPlusPlusLanguage.h"
 #include "Plugins/Language/Rust/RustLanguage.h"
 #include "Plugins/LanguageRuntime/CPlusPlus/ItaniumABI/ItaniumABILanguageRuntime.h"
+#include "Plugins/LanguageRuntime/Motoko/MotokoLanguageRuntime.h"
 #include "Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV1.h"
 #include "Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.h"
 #include "Plugins/LanguageRuntime/RenderScript/RenderScriptRuntime/RenderScriptRuntime.h"
@@ -218,6 +221,7 @@ llvm::Error SystemInitializerFull::Initialize() {
   llvm::InitializeAllDisassemblers();
 
   ClangASTContext::Initialize();
+  MotokoASTContext::Initialize();
   RustASTContext::Initialize();
 
 #define LLVM_TARGET(t) LLDB_PROCESS_ ## t(Initialize)
@@ -258,10 +262,12 @@ llvm::Error SystemInitializerFull::Initialize() {
   AppleObjCRuntimeV2::Initialize();
   AppleObjCRuntimeV1::Initialize();
   SystemRuntimeMacOSX::Initialize();
+  MotokoLanguageRuntime::Initialize();
   RenderScriptRuntime::Initialize();
   RustLanguageRuntime::Initialize();
 
   CPlusPlusLanguage::Initialize();
+  MotokoLanguage::Initialize();
   ObjCLanguage::Initialize();
   ObjCPlusPlusLanguage::Initialize();
   RustLanguage::Initialize();
@@ -319,6 +325,7 @@ void SystemInitializerFull::Terminate() {
   PluginManager::Terminate();
 
   ClangASTContext::Terminate();
+  MotokoASTContext::Terminate();
   RustASTContext::Terminate();
 
   ArchitectureArm::Terminate();
@@ -358,10 +365,12 @@ void SystemInitializerFull::Terminate() {
   AppleObjCRuntimeV2::Terminate();
   AppleObjCRuntimeV1::Terminate();
   SystemRuntimeMacOSX::Terminate();
+  MotokoLanguageRuntime::Terminate();
   RenderScriptRuntime::Terminate();
   RustLanguageRuntime::Terminate();
 
   CPlusPlusLanguage::Terminate();
+  MotokoLanguage::Terminate();
   ObjCLanguage::Terminate();
   ObjCPlusPlusLanguage::Terminate();
   RustLanguage::Terminate();

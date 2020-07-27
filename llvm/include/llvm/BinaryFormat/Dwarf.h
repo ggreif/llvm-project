@@ -228,6 +228,7 @@ inline bool isCPlusPlus(SourceLanguage S) {
   case DW_LANG_Mips_Assembler:
   case DW_LANG_GOOGLE_RenderScript:
   case DW_LANG_BORLAND_Delphi:
+  case DW_LANG_DFINITY_Motoko:
   case DW_LANG_lo_user:
   case DW_LANG_hi_user:
     return false;

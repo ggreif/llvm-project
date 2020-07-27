@@ -471,6 +471,7 @@ enum LanguageType {
   // Language::SetLanguageFromCString and Language::AsCString assume these can
   // be used as indexes into array g_languages.
   eLanguageTypeMipsAssembler = 0x0026,   ///< Mips_Assembler.
+  eLanguageTypeMotoko = 0x0027,          ///< Motoko.
   eNumLanguageTypes
 };
 

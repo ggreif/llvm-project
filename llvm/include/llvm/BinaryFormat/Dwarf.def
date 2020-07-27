@@ -701,6 +701,7 @@ HANDLE_DW_LANG(0x0025, BLISS, 0, 5, DWARF)
 HANDLE_DW_LANG(0x8001, Mips_Assembler, None, 0, MIPS)
 HANDLE_DW_LANG(0x8e57, GOOGLE_RenderScript, 0, 0, GOOGLE)
 HANDLE_DW_LANG(0xb000, BORLAND_Delphi, 0, 0, BORLAND)
+HANDLE_DW_LANG(0xdfdf, DFINITY_Motoko, 0, 0, WASM)
 
 // DWARF attribute type encodings.
 HANDLE_DW_ATE(0x01, address, 2, DWARF)
