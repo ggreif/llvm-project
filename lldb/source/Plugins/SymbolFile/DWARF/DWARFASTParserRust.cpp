@@ -9,7 +9,6 @@
 
 #include "DWARFASTParserRust.h"
 
-#include "DWARFASTParserRust.h"
 #include "DWARFCompileUnit.h"
 #include "DWARFDIE.h"
 //#include "DWARFDIECollection.h"
