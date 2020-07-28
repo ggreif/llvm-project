@@ -9,10 +9,8 @@
 
 #include "DWARFASTParserMotoko.h"
 
-#include "DWARFASTParserMotoko.h"
 #include "DWARFCompileUnit.h"
 #include "DWARFDIE.h"
-//#include "DWARFDIECollection.h"
 #include "DWARFDebugInfo.h"
 #include "DWARFDeclContext.h"
 #include "DWARFDefines.h"
