@@ -34,6 +34,10 @@ cmake -G Ninja -DLLVM_TARGETS_TO_BUILD=X86 \
 -DLLDB_ENABLE_CURSES=OFF \
  llvm
 ```
+Then
+```
+ninja bin/lldb
+```
 
 Improvements that need to be pursued
  - The `libxml2(-dev)` paths are to some random present artifacts, `nix-env -iA nixpkgs.libxml2.dev` doesn't help
@@ -52,6 +56,10 @@ cmake -G Ninja -DLLDB_ENABLE_CURSES=ON \
  -DLibEdit_LIBRARIES=$HOME/.nix-profile/lib \
  -DLibEdit_INCLUDE_DIRS=/nix/store/v4832sga5jdrhifqnqv8npa2w969snwh-libedit-20191231-3.1-dev/include \
   llvm
+```
+Then
+```
+ninja bin/lldb
 ```
 
 Improvements that need to be pursued
