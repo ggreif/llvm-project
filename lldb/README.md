@@ -59,7 +59,7 @@ cmake -G Ninja -DLLDB_ENABLE_CURSES=ON \
 ```
 Then
 ```
-ninja bin/lldb
+ninja bin/lldb bin/lldb-server
 ```
 
 Improvements that need to be pursued
