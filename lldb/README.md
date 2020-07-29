@@ -21,7 +21,7 @@ Prerequisites:
 Here we assume the command-line tools are installed (mostly because we need a signed `lldb-server`,
 but I also had trouble using the `clang-wrapper` from `nixpkgs`).
 
-Being at the tob directory of the repository, do
+Being at the top directory of the repository, do
 
 ```
 cmake -G Ninja -DLLVM_TARGETS_TO_BUILD=X86 \
@@ -38,7 +38,7 @@ cmake -G Ninja -DLLVM_TARGETS_TO_BUILD=X86 \
 Improvements that need to be pursued
  - The `libxml2(-dev)` paths are to some random present artifacts, `nix-env -iA nixpkgs.libxml2.dev` doesn't help
  - I have trouble enabling curses and libedit on the Mac.
- 
+ - out-of-repo builds
  
  ### Linux
  
@@ -57,3 +57,4 @@ cmake -G Ninja -DLLDB_ENABLE_CURSES=ON \
 Improvements that need to be pursued
  - we need a proper nix-expression so that we can cleanly pass the include paths too
  - for now you'll have to edit manually
+ - out-of-repo builds
