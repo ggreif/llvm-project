@@ -1,7 +1,9 @@
 # LLDB for Rust and Motoko
 
 This fork of the https://github.com/rust-lang/llvm-project/tree/rustc/10.0-2020-05-05 repository
-- adds the Rust language plugin (patches from Tom Tromey https://github.com/vadimcn/lldb/commits/rust-lldb)
+- adds the Rust language plugin (patches from Tom Tromey
+   https://github.com/vadimcn/lldb/commits/rust-lldb
+   resp. https://github.com/rust-lang/lldb/commits/rust-release-80-v2)
 - adds a Motoko Plugin
 
 ## Building
