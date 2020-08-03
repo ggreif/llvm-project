@@ -199,6 +199,8 @@ TypeSP DWARFASTParserMotoko::ParseSimpleType(const DWARFDIE &die) {
   ConstString type_name_const_str;
   uint64_t byte_size = 0;
   uint64_t encoding = 0;
+  uint64_t bit_size = 0;
+  uint64_t bit_offset = 0;
 
   for (auto &&value : IterableDIEAttrs(die)) {
     switch (value.first) {
@@ -209,6 +211,14 @@ TypeSP DWARFASTParserMotoko::ParseSimpleType(const DWARFDIE &die) {
       break;
     case DW_AT_byte_size:
       byte_size = value.second.Unsigned();
+      break;
+    case DW_AT_bit_size:
+      bit_size = value.second.Unsigned();
+      if (bit_size % 8 == 0)
+	byte_size = bit_size / 8;
+      break;
+    case DW_AT_data_bit_offset:
+      bit_offset = value.second.Unsigned();
       break;
     case DW_AT_encoding:
       encoding = value.second.Unsigned();
@@ -263,8 +273,7 @@ TypeSP DWARFASTParserMotoko::ParseSimpleType(const DWARFDIE &die) {
     LLVM_FALLTHROUGH;
   case DW_TAG_pointer_type:
   case DW_TAG_template_type_parameter: {
-    Type *type = dwarf->ResolveTypeUID(encoding_type, true);
-    if (type) {
+    if (Type *type = dwarf->ResolveTypeUID(encoding_type, true)) {
       CompilerType impl = type->GetForwardCompilerType();
       if (die.Tag() == DW_TAG_pointer_type) {
 	int byte_size = die.GetCU()->GetAddressByteSize();
@@ -356,13 +365,11 @@ TypeSP DWARFASTParserMotoko::ParseFunctionType(const DWARFDIE &die) {
       }
       break;
 
-    case DW_AT_type: {
-      Type *type = die.ResolveTypeUID(attr.second.Reference());
-      if (type) {
+    case DW_AT_type:
+      if (Type *type = die.ResolveTypeUID(attr.second.Reference())) {
 	return_type = type->GetForwardCompilerType();
       }
       break;
-    }
     }
   }
 
