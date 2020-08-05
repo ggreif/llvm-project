@@ -43,7 +43,7 @@ ValueObjectChild::ValueObjectChild(
   SetLanguageFlags(language_flags);
 }
 
-ValueObjectChild::~ValueObjectChild() {}
+ValueObjectChild::~ValueObjectChild() = default;
 
 lldb::ValueType ValueObjectChild::GetValueType() const {
   return m_parent->GetValueType();
@@ -110,8 +110,7 @@ LazyBool ValueObjectChild::CanUpdateWithInvalidExecutionContext() {
 bool ValueObjectChild::UpdateValue() {
   m_error.Clear();
   SetValueIsValid(false);
-  ValueObject *parent = m_parent;
-  if (parent) {
+  if (ValueObject *parent = m_parent) {
     if (parent->UpdateValueIfNeeded(false)) {
       m_value.SetCompilerType(GetCompilerType());
 
@@ -123,8 +122,8 @@ bool ValueObjectChild::UpdateValue() {
 
       Flags parent_type_flags(parent_type.GetTypeInfo());
       const bool is_instance_ptr_base =
-          ((m_is_base_class) &&
-           (parent_type_flags.AnySet(lldb::eTypeInstanceIsPointer)));
+          (m_is_base_class &&
+           parent_type_flags.AnySet(lldb::eTypeInstanceIsPointer));
 
       if (parent->GetCompilerType().ShouldTreatScalarValueAsAddress()) {
         lldb::addr_t addr = parent->GetPointerValue();
@@ -141,10 +140,9 @@ bool ValueObjectChild::UpdateValue() {
           switch (addr_type) {
           case eAddressTypeFile: {
             lldb::ProcessSP process_sp(GetProcessSP());
-            if (process_sp && process_sp->IsAlive())
-              m_value.SetValueType(Value::eValueTypeLoadAddress);
-            else
-              m_value.SetValueType(Value::eValueTypeFileAddress);
+	    m_value.SetValueType(process_sp && process_sp->IsAlive()
+				     ? Value::eValueTypeLoadAddress
+				     : Value::eValueTypeFileAddress);
           } break;
           case eAddressTypeLoad:
             m_value.SetValueType(is_instance_ptr_base
@@ -245,8 +243,7 @@ bool ValueObjectChild::UpdateValue() {
 }
 
 bool ValueObjectChild::IsInScope() {
-  ValueObject *root(GetRoot());
-  if (root)
+  if (ValueObject *root = GetRoot())
     return root->IsInScope();
   return false;
 }

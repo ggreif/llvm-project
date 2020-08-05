@@ -140,7 +140,7 @@ ValueObject::ValueObject(ExecutionContextScope *exe_scope,
 }
 
 // Destructor
-ValueObject::~ValueObject() {}
+ValueObject::~ValueObject() = default;
 
 void ValueObject::UpdateChildrenAddressType() {
   Value::ValueType value_type = m_value.GetValueType();
@@ -170,10 +170,9 @@ void ValueObject::UpdateChildrenAddressType() {
     // of the "next" member of LinkedListNode will become load addresses if
     // we have a live process, or remain a file address if it was a file
     // address.
-    if (process_is_alive && is_pointer_or_ref)
-      SetAddressTypeOfChildren(eAddressTypeLoad);
-    else
-      SetAddressTypeOfChildren(eAddressTypeFile);
+    SetAddressTypeOfChildren(process_is_alive && is_pointer_or_ref
+			       ? eAddressTypeLoad
+			       : eAddressTypeFile);
     break;
   case Value::eValueTypeHostAddress:
     // Same as above for load addresses, except children of pointer or refs
@@ -181,10 +180,9 @@ void ValueObject::UpdateChildrenAddressType() {
     // dried variables. If this type is a struct, the entire struct
     // contents will be copied into the heap of the
     // LLDB process, but we do not currently follow any pointers.
-    if (is_pointer_or_ref)
-      SetAddressTypeOfChildren(eAddressTypeLoad);
-    else
-      SetAddressTypeOfChildren(eAddressTypeHost);
+    SetAddressTypeOfChildren(is_pointer_or_ref
+			       ? eAddressTypeLoad
+			       : eAddressTypeHost);
     break;
   case Value::eValueTypeLoadAddress:
   case Value::eValueTypeScalar:
@@ -489,7 +487,7 @@ ValueObjectSP ValueObject::GetChildAtIndex(size_t idx, bool can_create) {
   if (idx < GetNumChildren()) {
     // Check if we have already made the child value object?
     if (can_create && !m_children.HasChildAtIndex(idx)) {
-      // No we haven't created the child at this index, so lets have our
+      // No we haven't created the child at this index, so let's have our
       // subclass do it and cache the result for quick future access.
       m_children.SetChildAtIndex(idx, CreateChildAtIndex(idx, false, 0));
     }

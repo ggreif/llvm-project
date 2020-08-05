@@ -71,10 +71,6 @@ protected:
   bool m_is_deref_of_parent;
   llvm::Optional<LazyBool> m_can_update_with_invalid_exe_ctx;
 
-  //
-  //  void
-  //  ReadValueFromMemory (ValueObject* parent, lldb::addr_t address);
-
 protected:
   friend class ValueObject;
   friend class ValueObjectConstResult;
