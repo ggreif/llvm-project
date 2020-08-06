@@ -913,14 +913,14 @@ TypeSP DWARFASTParserMotoko::ParseCLikeEnum(const DWARFDIE &die) {
     type_name_const_str = FullyQualify(type_name_const_str, die);
   }
 
-  std::map<uint64_t, std::string> values;
+  std::map<uint32_t, std::string> values;
   for (auto &&child_die : IterableDIEChildren(die)) {
     if (child_die.Tag() != DW_TAG_enumerator) {
       continue;
     }
 
     bool saw_value = false;
-    uint64_t value;
+    uint32_t value;
     std::string name;
     for (auto &&attr : IterableDIEAttrs(child_die)) {
       switch (attr.first) {

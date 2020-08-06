@@ -122,7 +122,7 @@ public:
   CompilerType CreateUnionType(const ConstString &name, uint32_t byte_size);
   CompilerType CreateCLikeEnumType(const lldb_private::ConstString &name,
                                    const CompilerType &underlying_type,
-                                   std::map<uint64_t, std::string> &&values);
+                                   std::map<uint32_t, std::string> &&values);
   CompilerType CreateEnumType(const lldb_private::ConstString &name,
                               uint64_t byte_size, uint32_t discr_offset,
                               uint32_t discr_byte_size);

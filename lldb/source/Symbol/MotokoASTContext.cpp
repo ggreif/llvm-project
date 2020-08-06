@@ -179,7 +179,7 @@ private:
 class MotokoCLikeEnum : public MotokoType {
 public:
   MotokoCLikeEnum(const ConstString &name, const CompilerType &underlying_type,
-                std::map<uint64_t, std::string> &&values)
+                std::map<uint32_t, std::string> &&values)
     : MotokoType(name),
       m_underlying_type(underlying_type),
       m_values(std::move(values))
@@ -202,7 +202,7 @@ public:
   }
 
   uint64_t ByteSize() const override {
-    return *m_underlying_type.GetByteSize(nullptr);
+    return 4;
   }
 
   bool IsSigned() const {
@@ -228,7 +228,7 @@ public:
 private:
 
   CompilerType m_underlying_type;
-  std::map<uint64_t, std::string> m_values;
+  std::map<uint32_t, std::string> m_values;
 };
 
 class MotokoFloat : public MotokoType {
@@ -1682,13 +1682,14 @@ bool MotokoASTContext::DumpTypeValue(lldb::opaque_compiler_type_t type, Stream *
     }
 
     if (format == eFormatEnum || format == eFormatDefault) {
-      if (MotokoCLikeEnum *clike = t->AsCLikeEnum()) {
-        uint64_t value;
+      if (auto clike = t->AsCLikeEnum()) {
+        uint32_t value;
         if (clike->IsSigned()) {
+	  assert(false);
           int64_t svalue = data.GetMaxS64Bitfield(&byte_offset, byte_size,
                                                   bitfield_bit_size,
                                                   bitfield_bit_offset);
-          value = uint64_t(svalue);
+          value = uint32_t(svalue);
         } else {
           value = data.GetMaxU64Bitfield(&byte_offset, byte_size,
                                          bitfield_bit_size,
@@ -1701,7 +1702,7 @@ bool MotokoASTContext::DumpTypeValue(lldb::opaque_compiler_type_t type, Stream *
         } else {
           // If the value couldn't be found, then something went wrong
           // we should inform the user.
-          s->Printf("(invalid enum value) %" PRIu64, value);
+          s->Printf("(invalid enum value) %" PRIu32, value);
         }
         return true;
       }
@@ -1990,7 +1991,7 @@ MotokoASTContext::CreateEnumType(const lldb_private::ConstString &name,
 CompilerType
 MotokoASTContext::CreateCLikeEnumType(const lldb_private::ConstString &name,
                                     const CompilerType &underlying_type,
-                                    std::map<uint64_t, std::string> &&values) {
+                                    std::map<uint32_t, std::string> &&values) {
   MotokoType *type = new MotokoCLikeEnum(name, underlying_type, std::move(values));
   return CacheType(type);
 }
