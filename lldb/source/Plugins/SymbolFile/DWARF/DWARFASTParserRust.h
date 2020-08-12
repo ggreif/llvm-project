@@ -119,10 +119,6 @@ private:
   // avoids giving the name to the enumeration type.
   DIERef m_discriminant = DIERef(llvm::None, DIERef::DebugInfo, DW_INVALID_OFFSET);
 
-  // When reading a Rust enum, we set this temporarily when reading
-  // the field types, so that they can get the correct scoping.
-  DWARFDIE m_rust_enum_die;
-
   // The Rust compiler emits the variants of an enum type as siblings
   // to the DW_TAG_union_type that (currently) represents the enum.
   // However, conceptually these ought to be nested.  This map tracks
