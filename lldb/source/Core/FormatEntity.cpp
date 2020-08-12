@@ -1684,13 +1684,12 @@ bool FormatEntity::Format(const Entry &entry, Stream &s,
               llvm::StringRef var_representation;
               const char *var_name = var_value_sp->GetName().GetCString();
               if (var_value_sp->GetCompilerType().IsValid()) {
-                if (var_value_sp && exe_scope->CalculateTarget())
+                auto target = exe_scope->CalculateTarget();
+                if (var_value_sp && target)
                   var_value_sp =
                       var_value_sp->GetQualifiedRepresentationIfAvailable(
-                          exe_scope->CalculateTarget()
-                              ->TargetProperties::GetPreferDynamicValue(),
-                          exe_scope->CalculateTarget()
-                              ->TargetProperties::GetEnableSyntheticValue());
+                          target->TargetProperties::GetPreferDynamicValue(),
+                          target->TargetProperties::GetEnableSyntheticValue());
                 if (var_value_sp->GetCompilerType().IsAggregateType() &&
                     DataVisualization::ShouldPrintAsOneLiner(*var_value_sp)) {
                   static StringSummaryFormat format(
