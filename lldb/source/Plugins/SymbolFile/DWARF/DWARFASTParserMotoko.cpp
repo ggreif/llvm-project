@@ -181,6 +181,8 @@ private:
   DWARFDIE m_die;
 };
 
+DIERef DWARFASTParserMotoko::no_discriminant = DIERef(llvm::None, DIERef::DebugInfo, DW_INVALID_OFFSET);
+
 ConstString DWARFASTParserMotoko::FullyQualify(const ConstString &name, const DWARFDIE &die) {
   SymbolFileDWARF *dwarf = die.GetDWARF();
   lldb::user_id_t id = die.GetID();
@@ -273,7 +275,7 @@ TypeSP DWARFASTParserMotoko::ParseSimpleType(const DWARFDIE &die) {
     LLVM_FALLTHROUGH;
   case DW_TAG_pointer_type:
   case DW_TAG_template_type_parameter: {
-    if (Type *type = dwarf->ResolveTypeUID(encoding_type, true)) {
+    if (auto type = dwarf->ResolveTypeUID(encoding_type, true)) {
       CompilerType impl = type->GetForwardCompilerType();
       if (die.Tag() == DW_TAG_pointer_type) {
 	int byte_size = die.GetCU()->GetAddressByteSize();
@@ -366,7 +368,7 @@ TypeSP DWARFASTParserMotoko::ParseFunctionType(const DWARFDIE &die) {
       break;
 
     case DW_AT_type:
-      if (Type *type = die.ResolveTypeUID(attr.second.Reference())) {
+      if (auto type = die.ResolveTypeUID(attr.second.Reference())) {
 	return_type = type->GetForwardCompilerType();
       }
       break;
@@ -384,8 +386,7 @@ TypeSP DWARFASTParserMotoko::ParseFunctionType(const DWARFDIE &die) {
     if (child_die.Tag() == DW_TAG_formal_parameter) {
       for (auto &&attr : IterableDIEAttrs(child_die)) {
 	if (attr.first == DW_AT_type) {
-	  Type *type = die.ResolveTypeUID(attr.second.Reference());
-	  if (type) {
+	  if (auto type = die.ResolveTypeUID(attr.second.Reference())) {
 	    function_param_types.push_back(type->GetForwardCompilerType());
 	  }
 	  break;
@@ -413,7 +414,7 @@ TypeSP DWARFASTParserMotoko::ParseFunctionType(const DWARFDIE &die) {
 static bool starts_with(const char *str, const char *prefix) {
   return strncmp(str, prefix, strlen(prefix)) == 0;
 }
-
+/*
 #define RUST_ENCODED_PREFIX "RUST$ENCODED$ENUM$"
 
 std::vector<size_t> DWARFASTParserMotoko::ParseDiscriminantPath(const char **in_str) {
@@ -445,7 +446,7 @@ std::vector<size_t> DWARFASTParserMotoko::ParseDiscriminantPath(const char **in_
   // At this point, STR points to the name of the elided member type.
   *in_str = str;
   return result;
-}
+}*/
 
 void DWARFASTParserMotoko::FindDiscriminantLocation(CompilerType type,
 						  std::vector<size_t> &&path,
@@ -475,7 +476,7 @@ void DWARFASTParserMotoko::FindDiscriminantLocation(CompilerType type,
     byte_size = this_size;
   }
 }
-
+/*
 bool DWARFASTParserMotoko::IsPossibleEnumVariant(const DWARFDIE &die) {
   if (die.Tag() != DW_TAG_structure_type) {
     // Only structures can be enum variants.
@@ -498,9 +499,9 @@ bool DWARFASTParserMotoko::IsPossibleEnumVariant(const DWARFDIE &die) {
   // enum variant.
   return true;
 }
-
+*/
 std::vector<DWARFASTParserMotoko::Field>
-DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &discriminant_path,
+DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, /*std::vector<size_t> &discriminant_path,*/
 				bool &is_tuple,
 				uint64_t &discr_offset, uint64_t &discr_byte_size,
 				bool &saw_discr, std::vector<CompilerType> &template_params) {
@@ -515,23 +516,29 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
 
   // We might have recursed in here with a variant part.  If so, we
   // want to handle the discriminant and variants specially.
-  bool is_variant = die.Tag() == DW_TAG_variant_part;
+  const bool is_variant = die.Tag() == DW_TAG_variant_part;
   DWARFDIE discriminant_die;
   if (is_variant) {
+    assert(structure_fields);
     discriminant_die = die.GetReferencedDIE(DW_AT_discr);
-  }
+    auto iter = find_if(structure_fields->begin(), structure_fields->end(),
+                        [&] (auto& f) { return f.ref == discriminant_die.GetDIERef(); });
+    assert(iter != structure_fields->end());
+    m_discriminant = iter->ref;
+    saw_discr = true;
+    discr_byte_size = 4; // FIXME: get from byte size(discriminant_die) or type!
+    discr_offset = 4; // FIXME: iter->byte_offset;
+  } else structure_fields = &fields;
 
   // For old-style ("RUST$ENUM$DISR"-using) enums that don't have the
   // NonZero optimization applied, variants are listed in order of
   // discriminant.  We track that value here.
   uint64_t naive_discriminant = 0;
 
-  bool could_be_enum = die.Tag() == DW_TAG_union_type;
-  bool encoded_enum = false;
-
   ModuleSP module_sp = die.GetModule();
   for (auto &&child_die : IterableDIEChildren(die)) {
     Field new_field;
+    new_field.ref = *child_die.GetDIERef();
 
     // If this isn't correct for this particular enum, that's ok,
     // because the correct value will be computed below.
@@ -570,9 +577,9 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
 	case DW_AT_name:
 	  new_field.name = attr.second.AsCString();
 	  if (fields.size() == 0) {
-	    if (strcmp(new_field.name, "RUST$ENUM$DISR") == 0)
+	    if (strcmp(new_field.name, "@pointer_mark") == 0)
 	      new_field.is_discriminant = true;
-	    else if (starts_with(new_field.name, RUST_ENCODED_PREFIX)) {
+	    /*	    else if (starts_with(new_field.name, RUST_ENCODED_PREFIX)) {
 	      // The "non-zero" optimization has been applied.
 	      // In this case, we'll see a single field like:
 	      //   RUST$ENCODED$ENUM$n0$n1...$Name
@@ -596,13 +603,14 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
               new_field.name = nullptr;
               encoded_enum = true;
 	    }
+	    */
 	  }
 	  break;
 	case DW_AT_type:
 	  new_field.type = attr.second;
-          if (could_be_enum && !encoded_enum) {
+          /*if (could_be_enum && !encoded_enum) {
             could_be_enum = IsPossibleEnumVariant(new_field.type.Reference());
-          }
+	  }*/
 	  break;
 	case DW_AT_data_member_location:
 	  if (attr.second.BlockData()) {
@@ -629,21 +637,20 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
       }
     }
 
-    if (child_die == discriminant_die) {
+    if (false && child_die == discriminant_die) {
       // This field is the discriminant, so don't push it, but instead
       // record this for the caller.
       saw_discr = true;
       discr_offset = new_field.byte_offset;
 
-      Type *type = die.ResolveTypeUID(new_field.type.Reference());
-      if (type) {
+      if (auto type = die.ResolveTypeUID(new_field.type.Reference())) {
 	lldb_private::CompilerType ctype = type->GetFullCompilerType();
 	discr_byte_size = *m_ast.GetBitSize(ctype.GetOpaqueQualType(), nullptr) / 8;
       }
     } else if (child_die.Tag() == DW_TAG_variant_part) {
       // New-style enum representation -- nothing useful is in the
       // enclosing struct, so we can just recurse here.
-      return ParseFields(child_die, discriminant_path, is_tuple,
+      return ParseFields(child_die, /*discriminant_path,*/ is_tuple,
 			 discr_offset, discr_byte_size, saw_discr, template_params);
     } else if (child_die.Tag() == DW_TAG_member) {
       if (new_field.is_discriminant) {
@@ -656,7 +663,7 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
 	// ... it means the tuple is a member type of an enum.
       } else if (numeric_names) {
 	char buf[32];
-	snprintf (buf, sizeof (buf), "__%u", field_index);
+	snprintf (buf, sizeof (buf), ".%u", field_index);
 	if (!new_field.name || strcmp(new_field.name, buf) != 0)
 	  numeric_names = false;
 	++field_index;
@@ -681,8 +688,8 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
     // arbitrarily choose an empty struct.
     is_tuple = field_index > 0;
   }
-
-  // If we saw a Motoko enum, correctly arrange the scope of the various
+  /*
+  // If we saw a Motoko variant, correctly arrange the scope of the various
   // sub-types.  This is needed to work around the way that the Motoko
   // compiler emits the types: it emits each enum variant's type as a
   // sibling of the enum type, whereas logically it ought to be a
@@ -691,13 +698,14 @@ DWARFASTParserMotoko::ParseFields(const DWARFDIE &die, std::vector<size_t> &disc
     for (auto &&field : fields) {
       m_reparent_map[field.type.Reference().GetDIE()] = die;
     }
-  }
+  }*/
 
+  if (!is_variant) structure_fields = nullptr;
   return fields;
 }
 
 TypeSP DWARFASTParserMotoko::ParseStructureType(const DWARFDIE &die) {
-  const bool is_union = die.Tag() == DW_TAG_union_type;
+  //const bool is_union = die.Tag() == DW_TAG_union_type;
 
   bool byte_size_valid = false;
   uint64_t byte_size = 0;
@@ -745,51 +753,50 @@ TypeSP DWARFASTParserMotoko::ParseStructureType(const DWARFDIE &die) {
   bool is_anon_tuple = is_tuple;
   bool saw_discr = false;
   uint64_t discr_offset, discr_byte_size;
-  std::vector<size_t> discriminant_path;
+  //std::vector<size_t> discriminant_path;
   std::vector<CompilerType> template_params;
-  std::vector<Field> fields = ParseFields(die, discriminant_path, is_tuple,
-					  discr_offset, discr_byte_size, saw_discr,
-					  template_params);
+  std::vector<Field> fields = ParseFields(die, /*discriminant_path,*/ is_tuple,
+                                          discr_offset, discr_byte_size, saw_discr,
+                                          template_params);
 
   // This is true if this is a union, there are multiple fields and
   // each field's type has a discriminant.
-  bool all_have_discriminants = is_union && fields.size() > 0;
+  //bool all_have_discriminants = is_union && fields.size() > 0;
   // This is true if the current type has a discriminant.
   // all_have_discriminants records whether the outer type is a Motoko
   // enum; this records whether the current type is one variant type
   // of the enum.
-  bool has_discriminant = fields.size() > 0 && fields[0].is_discriminant;
+  bool has_discriminant = false;//fields.size() > 0 && fields[0].is_discriminant;
 
   // See the comment by m_discriminant to understand this.
   DIERef save_discr = m_discriminant;
-  if (has_discriminant)
-    m_discriminant = *fields[0].type.Reference().GetDIERef();
+  //if (has_discriminant)
+  //  m_discriminant = *fields[0].type.Reference().GetDIERef();
 
   // Have to resolve the field types before creating the outer type,
   // so that we can see whether or not this is an enum.
   for (auto &&field : fields) {
-    if (field.is_elided) {
+    /*if (field.is_elided) {
       // A unit-like struct with the given name.  The byte size
       // probably doesn't matter.
       ConstString name = FullyQualify(type_name_const_str, die);
       name = ConstString((std::string(name.AsCString()) + "::" + field.name).c_str());
       field.compiler_type = m_ast.CreateStructType(name, 1, false);
-    } else {
-      Type *type = die.ResolveTypeUID(field.type.Reference());
-      if (type) {
-	field.compiler_type = type->GetFullCompilerType();
-	if (all_have_discriminants)
-	  all_have_discriminants = m_ast.TypeHasDiscriminant(field.compiler_type);
+    } else*/ {
+      if (auto type = die.ResolveTypeUID(field.type.Reference())) {
+        field.compiler_type = type->GetFullCompilerType();
+        //if (all_have_discriminants)
+        //  all_have_discriminants = m_ast.TypeHasDiscriminant(field.compiler_type);
       }
     }
 
     // Fix up the field's name by taking it from the type if necessary.
-    if (field.name == nullptr) {
+    if (!field.name) {
       field.name = field.compiler_type.GetTypeName().AsCString();
     }
   }
 
-  m_discriminant = save_discr;
+  m_discriminant = save_discr; // restore
 
   bool compiler_type_was_created = false;
   CompilerType compiler_type(&m_ast,
@@ -802,9 +809,9 @@ TypeSP DWARFASTParserMotoko::ParseStructureType(const DWARFDIE &die) {
     }
 
     if (saw_discr) {
-      compiler_type = m_ast.CreateEnumType(type_name_const_str, byte_size,
-					   discr_offset, discr_byte_size);
-    } else if (all_have_discriminants) {
+      compiler_type = m_ast.CreateVariantType(type_name_const_str, byte_size,
+                                              discr_offset, discr_byte_size);
+    } /*else if (all_have_discriminants) {
       // In this case, the discriminant is easily computed as the 0th
       // field of the 0th field.
       discriminant_path = std::vector<size_t> { 0 };
@@ -814,7 +821,7 @@ TypeSP DWARFASTParserMotoko::ParseStructureType(const DWARFDIE &die) {
 
       compiler_type = m_ast.CreateEnumType(type_name_const_str, byte_size,
 					   discr_offset, discr_byte_size);
-    } else if (!discriminant_path.empty()) {
+    } *//*else if (!discriminant_path.empty()) {
       CompilerType start_type = fields[discriminant_path[0]].compiler_type;
       discriminant_path.erase(discriminant_path.begin());
 
@@ -823,8 +830,8 @@ TypeSP DWARFASTParserMotoko::ParseStructureType(const DWARFDIE &die) {
 
       compiler_type = m_ast.CreateEnumType(type_name_const_str, byte_size,
 					   discr_offset, discr_byte_size);
-    } else if (is_union)
-      compiler_type = m_ast.CreateUnionType(type_name_const_str, byte_size);
+    } *//*else if (is_union)
+      compiler_type = m_ast.CreateUnionType(type_name_const_str, byte_size);*/
     else if (is_tuple)
       compiler_type = m_ast.CreateTupleType(type_name_const_str, byte_size, has_discriminant);
     else
@@ -897,7 +904,7 @@ TypeSP DWARFASTParserMotoko::ParseCLikeEnum(const DWARFDIE &die) {
       break;
 
     case DW_AT_type:
-      if (Type *type = die.ResolveTypeUID(attr.second.Reference())) {
+      if (auto type = die.ResolveTypeUID(attr.second.Reference())) {
 	underlying_type = type->GetFullCompilerType();
       }
       break;
@@ -1170,14 +1177,14 @@ lldb_private::CompilerDeclContext
 DWARFASTParserMotoko::GetDeclContextContainingUIDFromDWARF(const DWARFDIE &die) {
   DWARFDIE decl_ctx_die;
 
-  DWARFDebugInfoEntry *ptr = die.GetDIE();
+  /*DWARFDebugInfoEntry *ptr = die.GetDIE();
   auto iter = m_reparent_map.find(ptr);
   if (iter != m_reparent_map.end()) {
     decl_ctx_die = iter->second;
-  } else {
+    } else {*/
     SymbolFileDWARF *dwarf = die.GetDWARF();
     decl_ctx_die = dwarf->GetDeclContextDIEContainingDIE(die);
-  }
+  //}
   return GetDeclContextForUIDFromDWARF(decl_ctx_die);
 }
 

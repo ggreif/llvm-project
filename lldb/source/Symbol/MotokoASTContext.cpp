@@ -42,7 +42,7 @@ class MotokoAggregateBase;
 class MotokoArray;
 class MotokoBool;
 class MotokoCLikeEnum;
-class MotokoEnum;
+class MotokoVariant;
 class MotokoFunction;
 class MotokoIntegral;
 class MotokoPointer;
@@ -77,7 +77,7 @@ public:
   virtual MotokoArray *AsArray() { return nullptr; }
   virtual MotokoBool *AsBool() { return nullptr; }
   virtual MotokoCLikeEnum *AsCLikeEnum() { return nullptr; }
-  virtual MotokoEnum *AsEnum() { return nullptr; }
+  virtual MotokoVariant *AsVariant() { return nullptr; }
   virtual MotokoFunction *AsFunction() { return nullptr; }
   virtual MotokoIntegral *AsInteger () { return nullptr; }
   virtual MotokoPointer *AsPointer () { return nullptr; }
@@ -125,8 +125,9 @@ public:
 
 class MotokoIntegral : public MotokoType {
 public:
-  MotokoIntegral(const ConstString &name, bool is_signed, uint64_t byte_size,
-               bool is_char = false)
+  MotokoIntegral(const ConstString &name, bool is_signed,
+		 uint64_t byte_size,
+		 bool is_char = false)
     : MotokoType(name),
       m_is_signed(is_signed),
       m_byte_size(byte_size),
@@ -171,9 +172,9 @@ public:
 
 private:
 
-  bool m_is_signed;
-  uint64_t m_byte_size;
-  bool m_is_char;
+  const bool m_is_signed;
+  const uint8_t m_byte_size;
+  const bool m_is_char;
 };
 
 class MotokoCLikeEnum : public MotokoType {
@@ -581,7 +582,7 @@ public:
   }
 };
 
-class MotokoUnion : public MotokoAggregateBase {
+/*class MotokoUnion : public MotokoAggregateBase {
 public:
   MotokoUnion(const ConstString &name, uint64_t byte_size)
     : MotokoAggregateBase(name, byte_size)
@@ -609,22 +610,22 @@ public:
     }
     return tagname + " " + varname;
   }
-};
+};*/
 
-// A Motoko enum, not a C-like enum.
-class MotokoEnum : public MotokoAggregateBase {
+// A Motoko variant, not a C-like enum.
+class MotokoVariant : public MotokoAggregateBase {
 public:
-  MotokoEnum(const ConstString &name, uint64_t byte_size,
-           uint32_t discr_offset, uint32_t discr_byte_size)
+  MotokoVariant(const ConstString &name, uint64_t byte_size,
+                uint32_t discr_offset, uint32_t discr_byte_size)
     : MotokoAggregateBase(name, byte_size),
       m_discr_offset(discr_offset),
       m_discr_byte_size(discr_byte_size),
       m_default(-1)
   {}
 
-  DISALLOW_COPY_AND_ASSIGN(MotokoEnum);
+  DISALLOW_COPY_AND_ASSIGN(MotokoVariant);
 
-  MotokoEnum *AsEnum() override { return this; }
+  MotokoVariant *AsVariant() override { return this; }
 
   const char *Tag() const override {
     return "enum ";
@@ -637,7 +638,7 @@ public:
   }
 
   // Record the discriminant for the most recently added field.
-  void RecordDiscriminant(bool is_default, uint64_t discriminant) {
+  void RecordDiscriminant(bool is_default, uint32_t discriminant) {
     int value = int(FieldCount() - 1);
     if (is_default) {
       m_default = value;
@@ -651,7 +652,7 @@ public:
     discr_byte_size = m_discr_byte_size;
   }
 
-  CompilerType FindEnumVariant(uint64_t discriminant) {
+  CompilerType FindEnumVariant(uint32_t discriminant) {
     auto iter = m_discriminants.find(discriminant);
     int idx = m_default;
     if (iter != m_discriminants.end()) {
@@ -666,8 +667,8 @@ public:
 
   void FinishInitialization() override {
     for (auto&& iter : *this) {
-      MotokoType *rtype = static_cast<MotokoType *>(iter.m_type.GetOpaqueQualType());
-      if (MotokoAggregateBase* agg = rtype->AsAggregate()) {
+      auto rtype = static_cast<MotokoType *>(iter.m_type.GetOpaqueQualType());
+      if (auto agg = rtype->AsAggregate()) {
         agg->DropDiscriminant();
       }
     }
@@ -706,7 +707,7 @@ private:
 
   // This maps from discriminant values to indices in m_fields.  This
   // is used to find the correct variant given a discriminant value.
-  std::unordered_map<uint64_t, int> m_discriminants;
+  std::unordered_map<uint32_t, int> m_discriminants;
 };
 
 class MotokoFunction : public MotokoType {
@@ -1114,7 +1115,7 @@ bool MotokoASTContext::IsIntegerType(lldb::opaque_compiler_type_t type,
   if (!type)
     return false;
 
-  MotokoIntegral *inttype = static_cast<MotokoType *>(type)->AsInteger();
+  auto inttype = static_cast<MotokoType *>(type)->AsInteger();
   if (inttype) {
     is_signed = inttype->IsSigned();
     return true;
@@ -1132,7 +1133,7 @@ bool MotokoASTContext::IsPossibleDynamicType(lldb::opaque_compiler_type_t type,
   if (target_type)
     target_type->Clear();
   // FIXME eventually we'll handle trait object pointers here
-  if (static_cast<MotokoType *>(type)->AsEnum()) {
+  if (static_cast<MotokoType *>(type)->AsVariant()) {
     return true;
   }
   return false;
@@ -1389,10 +1390,10 @@ MotokoASTContext::GetBitSize(lldb::opaque_compiler_type_t type,
 			   ExecutionContextScope *exe_scope) {
   if (!type)
     return 0;
-  MotokoType *t = static_cast<MotokoType *>(type);
-  if (llvm::Optional<uint64_t> bit_size = t->ByteSize())
-    return *bit_size * 8;
-  else return llvm::None;
+  auto t = static_cast<MotokoType *>(type);
+  if (llvm::Optional<uint64_t> byte_size = t->ByteSize())
+    return *byte_size * 8;
+  return {};
 }
 
 lldb::Encoding MotokoASTContext::GetEncoding(lldb::opaque_compiler_type_t type,
@@ -1661,7 +1662,7 @@ bool MotokoASTContext::DumpTypeValue(lldb::opaque_compiler_type_t type, Stream *
   if (IsAggregateType(type)) {
     return false;
   } else {
-    MotokoType *t = static_cast<MotokoType *>(type);
+    auto t = static_cast<MotokoType *>(type);
     if (MotokoTypedef *typ = t->AsTypedef()) {
       CompilerType typedef_compiler_type = typ->UnderlyingType();
       if (format == eFormatDefault)
@@ -1874,7 +1875,8 @@ CompilerType MotokoASTContext::CreateIntegralType(const lldb_private::ConstStrin
                                                 bool is_signed,
                                                 uint64_t byte_size,
                                                 bool is_char_type) {
-  MotokoType *type = new MotokoIntegral(name, is_signed, byte_size, is_char_type);
+  MotokoType *type = new MotokoIntegral(name, is_signed, byte_size,
+					is_char_type);
   return CacheType(type);
 }
 
@@ -1929,11 +1931,11 @@ MotokoASTContext::CreateTupleType(const lldb_private::ConstString &name, uint32_
   return CacheType(type);
 }
 
-CompilerType
+/*CompilerType
 MotokoASTContext::CreateUnionType(const lldb_private::ConstString &name, uint32_t byte_size) {
   MotokoType *type = new MotokoUnion(name, byte_size);
   return CacheType(type);
-}
+}*/
 
 CompilerType
 MotokoASTContext::CreatePointerType(const lldb_private::ConstString &name,
@@ -1950,14 +1952,14 @@ void MotokoASTContext::AddFieldToStruct(const CompilerType &struct_type,
                                       bool is_default, uint64_t discriminant) {
   if (!struct_type)
     return;
-  MotokoASTContext *ast =
-      llvm::dyn_cast_or_null<MotokoASTContext>(struct_type.GetTypeSystem());
+  auto ast =
+    llvm::dyn_cast_or_null<MotokoASTContext>(struct_type.GetTypeSystem());
   if (!ast)
     return;
   MotokoType *type = static_cast<MotokoType *>(struct_type.GetOpaqueQualType());
-  if (MotokoAggregateBase *a = type->AsAggregate()) {
+  if (auto a = type->AsAggregate()) {
     a->AddField(name, field_type, byte_offset);
-    if (MotokoEnum *e = type->AsEnum()) {
+    if (auto e = type->AsVariant()) {
       e->RecordDiscriminant(is_default, discriminant);
     }
   }
@@ -1981,10 +1983,16 @@ MotokoASTContext::CreateVoidType() {
 }
 
 CompilerType
-MotokoASTContext::CreateEnumType(const lldb_private::ConstString &name,
-                               uint64_t byte_size, uint32_t discr_offset,
-                               uint32_t discr_byte_size) {
-  MotokoType *type = new MotokoEnum(name, byte_size, discr_offset, discr_byte_size);
+MotokoASTContext::CreateVariantType(const lldb_private::ConstString &name,
+                                    uint64_t byte_size, uint32_t discr_offset,
+                                    uint32_t discr_byte_size) {
+
+
+
+  assert(discr_byte_size == 4 && discr_offset == 4);
+
+
+  MotokoType *type = new MotokoVariant(name, byte_size, discr_offset, discr_byte_size);
   return CacheType(type);
 }
 
@@ -2021,31 +2029,28 @@ MotokoASTContext::TypeHasDiscriminant(const CompilerType &type) {
 }
 
 bool
-MotokoASTContext::GetEnumDiscriminantLocation(const CompilerType &type, uint64_t &discr_offset,
-                                            uint64_t &discr_byte_size) {
-  if (!type)
-    return false;
-  MotokoASTContext *ast = llvm::dyn_cast_or_null<MotokoASTContext>(type.GetTypeSystem());
-  if (!ast)
-    return false;
-  MotokoType *rtype = static_cast<MotokoType *>(type.GetOpaqueQualType());
-  if (MotokoEnum *e = rtype->AsEnum()) {
-    e->GetDiscriminantLocation(discr_offset, discr_byte_size);
-    return true;
+MotokoASTContext::GetVariantDiscriminantLocation(const CompilerType &type,
+                                                 uint64_t &discr_offset,
+                                                 uint64_t &discr_byte_size) {
+  if (type)
+  if (auto ast = llvm::dyn_cast_or_null<MotokoASTContext>(type.GetTypeSystem())) {
+    auto rtype = static_cast<MotokoType *>(type.GetOpaqueQualType());
+    if (auto e = rtype->AsVariant()) {
+      e->GetDiscriminantLocation(discr_offset, discr_byte_size);
+      return true;
+    }
   }
   return false;
 }
 
 CompilerType
-MotokoASTContext::FindEnumVariant(const CompilerType &type, uint64_t discriminant) {
-  if (!type)
-    return CompilerType();
-  MotokoASTContext *ast = llvm::dyn_cast_or_null<MotokoASTContext>(type.GetTypeSystem());
-  if (!ast)
-    return CompilerType();
-  MotokoType *rtype = static_cast<MotokoType *>(type.GetOpaqueQualType());
-  if (MotokoEnum *e = rtype->AsEnum()) {
-    return e->FindEnumVariant(discriminant);
+MotokoASTContext::FindVariantType(const CompilerType &type, uint32_t discriminant) {
+  if (type)
+  if (auto ast = llvm::dyn_cast_or_null<MotokoASTContext>(type.GetTypeSystem())) {
+    auto rtype = static_cast<MotokoType *>(type.GetOpaqueQualType());
+    if (auto e = rtype->AsVariant()) {
+      return e->FindEnumVariant(discriminant);
+    }
   }
   return CompilerType();
 }
@@ -2083,7 +2088,7 @@ UserExpression *MotokoASTContextForExpr::GetUserExpression(
 }
 
 ConstString MotokoASTContext::DeclGetName(void *opaque_decl) {
-  MotokoDecl *dc = (MotokoDecl *) opaque_decl;
+  auto dc = static_cast<MotokoDecl *>(opaque_decl);
   return dc->Name();
 }
 

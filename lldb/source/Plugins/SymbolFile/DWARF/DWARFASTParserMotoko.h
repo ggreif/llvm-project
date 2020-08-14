@@ -72,7 +72,7 @@ private:
   lldb_private::ConstString FullyQualify(const lldb_private::ConstString &name,
                                          const DWARFDIE &die);
 
-  std::vector<size_t> ParseDiscriminantPath(const char **in_str);
+  //std::vector<size_t> ParseDiscriminantPath(const char **in_str);
   void FindDiscriminantLocation(lldb_private::CompilerType type,
 				std::vector<size_t> &&path,
 				uint64_t &offset, uint64_t &byte_size);
@@ -81,8 +81,8 @@ private:
   struct Field {
     Field()
       : is_discriminant(false),
-	is_elided(false),
-	name(nullptr),
+	//is_elided(false),
+	//name(nullptr),
 	byte_offset(-1),
 	is_default(false),
 	discriminant(0)
@@ -92,19 +92,20 @@ private:
     bool is_discriminant;
     // True if this field is the field that was elided by the non-zero
     // optimization.
-    bool is_elided;
-    const char *name;
+    // NOT NEEDED bool is_elided;
+    const char *name = nullptr;
     DWARFFormValue type;
     lldb_private::CompilerType compiler_type;
     uint32_t byte_offset;
 
-    // These are used if this is a member of an enum type.
+    // These are used if this is a member of a variant type.
     bool is_default;
     uint64_t discriminant;
+    DIERef ref = DWARFASTParserMotoko::no_discriminant; // so that we can locate the discriminant
   };
 
   std::vector<Field> ParseFields(const DWARFDIE &die,
-				 std::vector<size_t> &discriminant_path,
+				 //std::vector<size_t> &discriminant_path,
 				 bool &is_tuple,
 				 uint64_t &discr_offset, uint64_t &discr_byte_size,
 				 bool &saw_discr,
@@ -117,18 +118,20 @@ private:
   // same name as the enum type itself.  So, when we expect to read
   // the enumeration type, we set this member, and ParseCLikeEnum
   // avoids giving the name to the enumeration type.
-  DIERef m_discriminant = DIERef(llvm::None, DIERef::DebugInfo, DW_INVALID_OFFSET);
+  static DIERef no_discriminant;
+  DIERef m_discriminant = no_discriminant;
+  const std::vector<Field>* structure_fields = nullptr;
 
   // When reading a Motoko enum, we set this temporarily when reading
   // the field types, so that they can get the correct scoping.
-  DWARFDIE m_rust_enum_die;
+  //DWARFDIE m_rust_enum_die;
 
-  // The Motoko compiler emits the variants of an enum type as siblings
+  // NOT NEEDED! The Motoko compiler emits the variants of an enum type as siblings
   // to the DW_TAG_union_type that (currently) represents the enum.
   // However, conceptually these ought to be nested.  This map tracks
   // DIEs involved in this situation so that the enum variants can be
   // given correctly-scoped names.
-  llvm::DenseMap<const DWARFDebugInfoEntry *, DWARFDIE> m_reparent_map;
+  //llvm::DenseMap<const DWARFDebugInfoEntry *, DWARFDIE> m_reparent_map;
 
   llvm::DenseMap<const DWARFDebugInfoEntry *, lldb_private::CompilerDeclContext> m_decl_contexts;
   llvm::DenseMap<const DWARFDebugInfoEntry *, lldb_private::CompilerDecl> m_decls;

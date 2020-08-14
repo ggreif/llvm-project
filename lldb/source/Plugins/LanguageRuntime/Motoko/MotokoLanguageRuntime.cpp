@@ -77,7 +77,7 @@ bool MotokoLanguageRuntime::GetDynamicTypeAndAddress(
   }
 
   uint64_t discr_offset, discr_byte_size;
-  if (ast->GetEnumDiscriminantLocation(type, discr_offset, discr_byte_size)) {
+  if (ast->GetVariantDiscriminantLocation(type, discr_offset, discr_byte_size)) {
     lldb::addr_t original_ptr = in_value.GetAddressOf(false); // FIXME?
     if (original_ptr == LLDB_INVALID_ADDRESS) {
       return false;
@@ -90,14 +90,14 @@ bool MotokoLanguageRuntime::GetDynamicTypeAndAddress(
     }
 
     Status error;
-    uint64_t discriminant =
+    uint32_t discriminant =
       process->ReadUnsignedIntegerFromMemory(original_ptr + discr_offset, discr_byte_size,
 					     0, error);
     if (!error.Success()) {
       return false;
     }
 
-    CompilerType variant_type = ast->FindEnumVariant(type, discriminant);
+    CompilerType variant_type = ast->FindVariantType(type, discriminant);
     if (!variant_type) {
       return false;
     }

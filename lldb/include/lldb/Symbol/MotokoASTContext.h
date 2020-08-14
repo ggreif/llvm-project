@@ -86,7 +86,7 @@ public:
                                 bool *is_instance_method_ptr,
                                 ConstString *language_object_name_ptr) override;
   bool DeclContextIsContainedInLookup(void *opaque_decl_ctx,
-				      void *other_opaque_decl_ctx) override;
+                                      void *other_opaque_decl_ctx) override;
 
   //----------------------------------------------------------------------
   // Creating Types
@@ -95,7 +95,8 @@ public:
   CompilerType CreateVoidType();
   CompilerType CreateBoolType(const lldb_private::ConstString &name);
   CompilerType CreateIntegralType(const lldb_private::ConstString &name,
-                                  bool is_signed, uint64_t byte_size,
+                                  bool is_signed,
+                                  uint64_t byte_size,
                                   bool is_char_type = false);
   CompilerType CreateIntrinsicIntegralType(bool is_signed, uint64_t byte_size);
   CompilerType CreateCharType();
@@ -113,19 +114,19 @@ public:
   CompilerType CreateFunctionType(const lldb_private::ConstString &name,
                                   const CompilerType &return_type,
                                   const std::vector<CompilerType> &&params,
-				  const std::vector<CompilerType> &&template_params);
+                                  const std::vector<CompilerType> &&template_params);
 
   CompilerType CreateStructType(const ConstString &name, uint32_t byte_size,
                                 bool has_discriminant);
   CompilerType CreateTupleType(const ConstString &name, uint32_t byte_size,
                                bool has_discriminant);
-  CompilerType CreateUnionType(const ConstString &name, uint32_t byte_size);
+  //CompilerType CreateUnionType(const ConstString &name, uint32_t byte_size);
   CompilerType CreateCLikeEnumType(const lldb_private::ConstString &name,
                                    const CompilerType &underlying_type,
                                    std::map<uint32_t, std::string> &&values);
-  CompilerType CreateEnumType(const lldb_private::ConstString &name,
-                              uint64_t byte_size, uint32_t discr_offset,
-                              uint32_t discr_byte_size);
+  CompilerType CreateVariantType(const lldb_private::ConstString &name,
+                                 uint64_t byte_size, uint32_t discr_offset,
+                                 uint32_t discr_byte_size);
 
   void AddFieldToStruct(const CompilerType &struct_type,
                         const ConstString &name, const CompilerType &field_type,
@@ -140,12 +141,12 @@ public:
 
   // Return true and set the out params if the type is a Motoko enum;
   // return false otherwise.
-  bool GetEnumDiscriminantLocation(const CompilerType &type, uint64_t &discr_offset,
-                                   uint64_t &discr_byte_size);
+  bool GetVariantDiscriminantLocation(const CompilerType &type, uint64_t &discr_offset,
+                                      uint64_t &discr_byte_size);
 
   // Given an actual discriminant value, find the correct enum variant
   // type.
-  CompilerType FindEnumVariant(const CompilerType &type, uint64_t discriminant);
+  CompilerType FindVariantType(const CompilerType &type, uint32_t discriminant);
 
   //----------------------------------------------------------------------
   // Tests
@@ -274,7 +275,7 @@ public:
 
   uint32_t GetNumChildren(lldb::opaque_compiler_type_t type,
                           bool omit_empty_base_classes,
-			  const ExecutionContext*) override;
+                          const ExecutionContext*) override;
 
   lldb::BasicType
   GetBasicTypeEnumeration(lldb::opaque_compiler_type_t type) override;
@@ -337,7 +338,7 @@ public:
                                 std::vector<uint32_t> &child_indexes) override;
 
   lldb::TemplateArgumentKind GetTemplateArgumentKind(lldb::opaque_compiler_type_t type,
-						     size_t idx) override {
+                                                     size_t idx) override {
     // Motoko currently only has types.
     return lldb::eTemplateArgumentKindType;
   }
@@ -395,7 +396,7 @@ public:
 
   virtual llvm::Optional<size_t>
   GetTypeBitAlign(lldb::opaque_compiler_type_t type,
-		  ExecutionContextScope*) override;
+                  ExecutionContextScope*) override;
 
   CompilerType GetBasicTypeFromAST(lldb::BasicType basic_type) override;
 
