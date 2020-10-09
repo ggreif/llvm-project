@@ -11,10 +11,10 @@
 
 #include "DWARFCompileUnit.h"
 #include "DWARFDIE.h"
-//#include "DWARFDIECollection.h"
 #include "DWARFDebugInfo.h"
 #include "DWARFDeclContext.h"
 #include "DWARFDefines.h"
+#include "LogChannelDWARF.h"
 #include "SymbolFileDWARF.h"
 #include "SymbolFileDWARFDebugMap.h"
 #include "UniqueDWARFASTType.h"
@@ -27,6 +27,7 @@
 #include "lldb/Symbol/Function.h"
 #include "lldb/Symbol/ObjectFile.h"
 #include "lldb/Symbol/TypeList.h"
+#include "lldb/Utility/Log.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -249,11 +250,12 @@ TypeSP DWARFASTParserRust::ParseSimpleType(const DWARFDIE &die) {
 					       byte_size,
                                                (encoding == DW_ATE_unsigned_char ||
                                                 encoding == DW_ATE_UTF));
-    else/*
+    else if (auto log = LogChannelDWARF::GetLogIfAny(DWARF_LOG_DEBUG_INFO)) {
       dwarf->GetObjectFile()->GetModule()->LogMessage(
           log, "DWARFASTParserRust::ParseSimpleType (die = 0x%8.8x) %s "
                "unrecognized encoding '%d')",
-	       die.GetOffset(), DW_TAG_value_to_name(die.Tag()), int(encoding));*/
+	       die.GetOffset(), DW_TAG_value_to_name(die.Tag()), int(encoding));
+    }
     break;
 
     // Note that, currently, rustc does not emit DW_TAG_reference_type
