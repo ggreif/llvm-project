@@ -23,17 +23,21 @@ Prerequisites:
 Here we assume the command-line tools are installed (mostly because we need a signed `lldb-server`,
 but I also had trouble using the `clang-wrapper` from `nixpkgs`).
 
-Being at the top directory of the repository, do
+Being at the top directory of the repository (but outside of the `nix` shell), do
 
 ```
 cmake -G Ninja -DLLVM_TARGETS_TO_BUILD=X86 \
--DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi;lldb" \
+-DLLVM_ENABLE_PROJECTS="clang;lldb" \
 -DLLDB_USE_SYSTEM_DEBUGSERVER=ON \
 -DBUILD_SHARED_LIBS=ON \
--DLLVM_ENABLE_LIBCXX=ON -DLLVM_BUILD_EXTERNAL_COMPILER_RT=OFF \
+-DLLVM_ENABLE_LIBCXX=OFF -DLLVM_BUILD_EXTERNAL_COMPILER_RT=OFF \
+-DHAVE_CXX_ATOMICS_WITHOUT_LIB=ON \
+-DLLDB_INCLUDE_TESTS=OFF \
 -DLIBXML2_INCLUDE_DIR=/nix/store/83ccaw4fa3jgsmr28s8b0jhk4y0cjb91-libxml2-2.9.10-dev/include/libxml2 \
--DLIBXML2_LIBRARY=/nix/store/v9pb2nfz6y2jb44fk0zl6fk1cdrgfxs2-libxml2-2.9.10/lib \
--DLLDB_ENABLE_CURSES=OFF \
+-DLIBXML2_LIBRARY=/nix/store/v9pb2nfz6y2jb44fk0zl6fk1cdrgfxs2-libxml2-2.9.10/lib/libxml2.dylib  \
+"-DLibEdit_INCLUDE_DIRS=/nix/store/ivwwngfdwwlq8xyfamp99fahwj6dvn84-libedit-20191231-3.1-dev/include" \
+"-DLibEdit_LIBRARIES=/nix/store/5w7wxf823487cs0br9ahwjjh2a925ai7-libedit-20191231-3.1/lib/libedit.dylib" \
+-DLLVM_ENABLE_RTTI=OFF \
  llvm
 ```
 Then
@@ -43,7 +47,6 @@ ninja bin/lldb
 
 Improvements that need to be pursued
  - The `libxml2(-dev)` paths are to some random present artifacts, `nix-env -iA nixpkgs.libxml2.dev` doesn't help
- - I have trouble enabling curses and libedit on the Mac.
  - out-of-repo builds
  
 ### Linux
