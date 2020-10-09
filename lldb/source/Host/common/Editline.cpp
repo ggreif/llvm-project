@@ -36,7 +36,7 @@ using namespace lldb_private::line_editor;
 // assumption that may not exist on other platforms.  The setupterm() function
 // would normally require headers that don't work gracefully in this context,
 // so the function declaraction has been hoisted here.
-#if defined(__APPLE__)
+#if defined(__APPLE__) && LLDB_ENABLE_CURSES
 extern "C" {
 int setupterm(char *term, int fildes, int *errret);
 }
