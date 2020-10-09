@@ -266,8 +266,7 @@ TypeSP DWARFASTParserRust::ParseSimpleType(const DWARFDIE &die) {
     LLVM_FALLTHROUGH;
   case DW_TAG_pointer_type:
   case DW_TAG_template_type_parameter: {
-    Type *type = dwarf->ResolveTypeUID(encoding_type, true);
-    if (type) {
+    if (auto type = dwarf->ResolveTypeUID(encoding_type, true)) {
       CompilerType impl = type->GetForwardCompilerType();
       if (die.Tag() == DW_TAG_pointer_type) {
 	int byte_size = die.GetCU()->GetAddressByteSize();
