@@ -46,7 +46,7 @@ Improvements that need to be pursued
  - I have trouble enabling curses and libedit on the Mac.
  - out-of-repo builds
  
- ### Linux
+### Linux
  
  ```
 cmake -G Ninja -DLLDB_ENABLE_CURSES=ON \
@@ -68,3 +68,26 @@ Improvements that need to be pursued
  - we need a proper nix-expression so that we can cleanly pass the include paths too
  - for now you'll have to edit manually
  - out-of-repo builds
+
+
+## Recipes as of 2020-10-08
+
+On Linux this works pretty neatly in a `gabor/dwarf` shell
+
+``` shell
+echo cmake -G Ninja \
+  "-DLLVM_ENABLE_PROJECTS='clang;lldb'" -DLLVM_TARGETS_TO_BUILD=X86 \
+  -DBUILD_SHARED_LIBS=ON \
+  -DLLDB_ENABLE_LIBEDIT=ON \
+  -DLLDB_ENABLE_CURSES=ON \
+  -DCMAKE_C_COMPILER=/nix/store/l04qhz4nzmzmrmg7zc1iv777j8mqcclv-clang-wrapper-10.0.0/bin/clang \
+  -DCMAKE_CXX_COMPILER=/nix/store/l04qhz4nzmzmrmg7zc1iv777j8mqcclv-clang-wrapper-10.0.0/bin/clang++ \
+  -DLLVM_ENABLE_RTTI=OFF \
+  ${GUI_FLAGS} \
+ -S llvm \
+ -B build \
+ | sh
+
+ninja -C build bin/lldb bin/lldb-server
+
+```
