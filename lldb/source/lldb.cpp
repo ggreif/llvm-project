@@ -70,6 +70,7 @@ const char *lldb_private::GetVersion() {
   }
 
   // We don't have a version number (yet?).
+  g_version_str += "\n  motoko-enabled";
   g_version_str += "\n  rust-enabled";
 
   return g_version_str.c_str();
